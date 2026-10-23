@@ -10,7 +10,7 @@ import { ActionToolbar } from './components/ActionToolbar';
 import { ProcessingSummary } from './components/ProcessingSummary';
 import { DataPreviewModal } from './components/DataPreviewModal';
 import { HowItWorksModal } from './components/HowItWorksModal';
-import { parseWorkbook } from './utils/excelReader';
+import { parseWorkbook, getPostTestDefaults, getMasterDefaults } from './utils/excelReader';
 import { enrichPostTestWorkbook, generateEditedFileName } from './utils/excelEnricher';
 import {
   createSamplePostTestWorkbook,
@@ -56,7 +56,12 @@ export default function App() {
 
     try {
       const { meta } = await parseWorkbook(file, file.name, file.size);
-      setPostTestMeta(meta);
+      const defaults = getPostTestDefaults(meta.sheets);
+      setPostTestMeta({
+        ...meta,
+        selectedSheet: defaults.selectedSheet,
+        nipColumn: defaults.nipColumn,
+      });
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : String(err);
       setPostTestError(`Gagal membaca file: ${msg}`);
@@ -74,7 +79,13 @@ export default function App() {
 
     try {
       const { meta } = await parseWorkbook(file, file.name, file.size);
-      setMasterMeta(meta);
+      const defaults = getMasterDefaults(meta.sheets);
+      setMasterMeta({
+        ...meta,
+        selectedSheet: defaults.selectedSheet,
+        nipColumn: defaults.nipColumn,
+        nameColumn: defaults.nameColumn,
+      });
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : String(err);
       setMasterError(`Gagal membaca file: ${msg}`);
@@ -87,34 +98,22 @@ export default function App() {
   // Sheet & column config handlers
   const handlePostTestSheetChange = (sheetName: string) => {
     if (!postTestMeta) return;
-    const targetSheet = postTestMeta.sheets.find((s) => s.name === sheetName);
-    const nipCol =
-      targetSheet?.headers.find((h) => h.toLowerCase().includes('nip')) ||
-      targetSheet?.headers[0] ||
-      '';
+    const defaults = getPostTestDefaults(postTestMeta.sheets, sheetName);
     setPostTestMeta({
       ...postTestMeta,
-      selectedSheet: sheetName,
-      nipColumn: nipCol,
+      selectedSheet: defaults.selectedSheet,
+      nipColumn: defaults.nipColumn,
     });
   };
 
   const handleMasterSheetChange = (sheetName: string) => {
     if (!masterMeta) return;
-    const targetSheet = masterMeta.sheets.find((s) => s.name === sheetName);
-    const nipCol =
-      targetSheet?.headers.find((h) => h.toLowerCase().includes('nip')) ||
-      targetSheet?.headers[0] ||
-      '';
-    const nameCol =
-      targetSheet?.headers.find((h) => h.toLowerCase().includes('nama')) ||
-      targetSheet?.headers[1] ||
-      '';
+    const defaults = getMasterDefaults(masterMeta.sheets, sheetName);
     setMasterMeta({
       ...masterMeta,
-      selectedSheet: sheetName,
-      nipColumn: nipCol,
-      nameColumn: nameCol,
+      selectedSheet: defaults.selectedSheet,
+      nipColumn: defaults.nipColumn,
+      nameColumn: defaults.nameColumn,
     });
   };
 
@@ -224,8 +223,20 @@ export default function App() {
         masterBuf.byteLength
       );
 
-      setPostTestMeta(postTestParsed.meta);
-      setMasterMeta(masterParsed.meta);
+      const ptDefaults = getPostTestDefaults(postTestParsed.meta.sheets);
+      const masterDefaults = getMasterDefaults(masterParsed.meta.sheets);
+
+      setPostTestMeta({
+        ...postTestParsed.meta,
+        selectedSheet: ptDefaults.selectedSheet,
+        nipColumn: ptDefaults.nipColumn,
+      });
+      setMasterMeta({
+        ...masterParsed.meta,
+        selectedSheet: masterDefaults.selectedSheet,
+        nipColumn: masterDefaults.nipColumn,
+        nameColumn: masterDefaults.nameColumn,
+      });
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : String(err);
       setGlobalError(`Gagal memuat file contoh: ${msg}`);

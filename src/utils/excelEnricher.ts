@@ -375,11 +375,10 @@ export async function enrichPostTestWorkbook(
     if (rawBuffer instanceof ArrayBuffer) {
       outputBuffer = rawBuffer;
     } else {
-      outputBuffer = (rawBuffer as unknown as Uint8Array).buffer.slice(
-        (rawBuffer as unknown as Uint8Array).byteOffset,
-        (rawBuffer as unknown as Uint8Array).byteOffset +
-          (rawBuffer as unknown as Uint8Array).byteLength
-      );
+      const u8 = new Uint8Array(rawBuffer as ArrayBufferLike);
+      const ab = new ArrayBuffer(u8.byteLength);
+      new Uint8Array(ab).set(u8);
+      outputBuffer = ab;
     }
   } catch (err: unknown) {
     const msg = err instanceof Error ? err.message : String(err);

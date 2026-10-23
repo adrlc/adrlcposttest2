@@ -14,7 +14,7 @@ export async function createSamplePostTestWorkbook(): Promise<ArrayBuffer> {
   wb.creator = 'Corporate Training Center';
   wb.created = new Date();
 
-  const ws = wb.addWorksheet('Hasil Post Test', {
+  const ws = wb.addWorksheet('Data Peserta', {
     views: [{ showGridLines: true }],
   });
 

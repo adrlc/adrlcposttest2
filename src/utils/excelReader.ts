@@ -100,44 +100,119 @@ export async function parseWorkbook(
     sheets.push(inspectWorksheet(workbook.worksheets[0]));
   }
 
-  // Pick first sheet by default
+  // Default fallback sheet
   const defaultSheet = sheets[0];
-
-  // Auto-detect NIP column
-  let detectedNip = '';
-  for (const header of defaultSheet.headers) {
-    if (isLikelyNipHeader(header)) {
-      detectedNip = header;
-      break;
-    }
-  }
-  if (!detectedNip && defaultSheet.headers.length > 0) {
-    // If not detected, fallback to first non-empty header
-    detectedNip = defaultSheet.headers.find((h) => !h.startsWith('Kolom ')) || defaultSheet.headers[0];
-  }
-
-  // Auto-detect Name column
-  let detectedName = '';
-  for (const header of defaultSheet.headers) {
-    if (isLikelyNameHeader(header)) {
-      detectedName = header;
-      break;
-    }
-  }
-  if (!detectedName && defaultSheet.headers.length > 1) {
-    // Pick another column distinct from NIP
-    detectedName = defaultSheet.headers.find((h) => h !== detectedNip) || '';
-  }
 
   const meta: WorkbookMeta = {
     fileName,
     fileSize,
     sheets,
     selectedSheet: defaultSheet.name,
-    nipColumn: detectedNip,
-    nameColumn: detectedName,
+    nipColumn: '',
+    nameColumn: '',
     buffer,
   };
 
   return { workbook, meta };
 }
+
+/**
+ * Resolves default sheet and column selection for Post Test workbook:
+ * 1. Sheet: auto-select sheet named "Data Peserta" (case-insensitive, trimmed).
+ *    If not found, fall back to the first sheet.
+ * 2. Column: auto-select column named "Player Name" (case-insensitive, trimmed).
+ *    If not found, set nipColumn to "" (empty) - DO NOT pick randomly.
+ */
+export function getPostTestDefaults(
+  sheets: SheetInfo[],
+  preferredSheetName?: string
+): { selectedSheet: string; nipColumn: string; defaultColumnNotFound: boolean } {
+  if (!sheets || sheets.length === 0) {
+    return { selectedSheet: '', nipColumn: '', defaultColumnNotFound: false };
+  }
+
+  // Find sheet
+  let targetSheet: SheetInfo | undefined;
+  if (preferredSheetName) {
+    targetSheet = sheets.find((s) => s.name === preferredSheetName);
+  }
+  if (!targetSheet) {
+    targetSheet = sheets.find(
+      (s) => s.name.trim().toLowerCase() === 'data peserta'
+    ) || sheets[0];
+  }
+
+  // Find column "Player Name"
+  const playerColHeader = targetSheet.headers.find(
+    (h) => h.trim().toLowerCase() === 'player name'
+  );
+
+  if (playerColHeader) {
+    return {
+      selectedSheet: targetSheet.name,
+      nipColumn: playerColHeader,
+      defaultColumnNotFound: false,
+    };
+  } else {
+    return {
+      selectedSheet: targetSheet.name,
+      nipColumn: '',
+      defaultColumnNotFound: true,
+    };
+  }
+}
+
+/**
+ * Resolves default sheet and columns for Master Employee workbook.
+ */
+export function getMasterDefaults(
+  sheets: SheetInfo[],
+  preferredSheetName?: string
+): { selectedSheet: string; nipColumn: string; nameColumn: string } {
+  if (!sheets || sheets.length === 0) {
+    return { selectedSheet: '', nipColumn: '', nameColumn: '' };
+  }
+
+  let targetSheet: SheetInfo | undefined;
+  if (preferredSheetName) {
+    targetSheet = sheets.find((s) => s.name === preferredSheetName);
+  }
+  if (!targetSheet) {
+    targetSheet = sheets.find(
+      (s) =>
+        s.name.trim().toLowerCase() === 'master karyawan' ||
+        s.name.trim().toLowerCase() === 'master'
+    ) || sheets[0];
+  }
+
+  let nipCol = '';
+  for (const h of targetSheet.headers) {
+    if (isLikelyNipHeader(h)) {
+      nipCol = h;
+      break;
+    }
+  }
+  if (!nipCol && targetSheet.headers.length > 0) {
+    nipCol =
+      targetSheet.headers.find((h) => !h.startsWith('Kolom ')) ||
+      targetSheet.headers[0];
+  }
+
+  let nameCol = '';
+  for (const h of targetSheet.headers) {
+    if (isLikelyNameHeader(h)) {
+      nameCol = h;
+      break;
+    }
+  }
+  if (!nameCol && targetSheet.headers.length > 1) {
+    nameCol = targetSheet.headers.find((h) => h !== nipCol) || '';
+  }
+
+  return {
+    selectedSheet: targetSheet.name,
+    nipColumn: nipCol,
+    nameColumn: nameCol,
+  };
+}
+

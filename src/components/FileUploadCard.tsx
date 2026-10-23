@@ -235,6 +235,14 @@ export const FileUploadCard: React.FC<FileUploadCardProps> = ({
                     </option>
                   ))}
                 </select>
+                {accentColor === 'lilac' &&
+                  !fileMeta.sheets.some(
+                    (s) => s.name.trim().toLowerCase() === 'data peserta'
+                  ) && (
+                    <p className="text-[10px] text-amber-700 mt-1 font-medium">
+                      Note: Sheet &quot;Data Peserta&quot; tidak ditemukan. Menggunakan sheet pertama (&quot;{activeSheet?.name}&quot;) sebagai fallback.
+                    </p>
+                  )}
               </div>
 
               {/* NIP Column Selector */}
@@ -254,13 +262,24 @@ export const FileUploadCard: React.FC<FileUploadCardProps> = ({
                   onChange={(e) => onNipColumnChange(e.target.value)}
                   className="w-full text-xs bg-white rounded-xl px-3.5 py-2.5 text-[#121212] font-semibold border-0 focus:ring-2 focus:ring-[#D6D6FD] outline-hidden cursor-pointer"
                 >
-                  <option value="">-- Pilih Kolom NIP --</option>
+                  <option value="">-- Pilih Kolom NIP / Peserta --</option>
                   {activeSheet?.headers.map((h, i) => (
                     <option key={`${h}-${i}`} value={h}>
                       {h}
                     </option>
                   ))}
                 </select>
+                {accentColor === 'lilac' && !fileMeta.nipColumn && (
+                  <div className="p-3 bg-amber-50 rounded-xl border border-amber-200/80 text-[11px] text-amber-900 flex items-start gap-2 mt-2">
+                    <AlertCircle className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
+                    <div>
+                      <p className="font-bold">Kolom Default &quot;Player Name&quot; Tidak Ditemukan</p>
+                      <p className="mt-0.5 font-normal text-amber-800 leading-relaxed">
+                        Kolom <strong>Player Name</strong> tidak ditemukan secara otomatis pada sheet &quot;{activeSheet?.name}&quot;. Silakan pilih kolom NIP / Peserta secara manual dari dropdown di atas.
+                      </p>
+                    </div>
+                  </div>
+                )}
               </div>
 
               {/* Name Column Selector (for Master file) */}
