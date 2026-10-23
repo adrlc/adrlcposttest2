@@ -1,0 +1,6 @@
+{
+  "name": "Post Test Excel Enricher",
+  "description": "Aplikasi web modern untuk menambahkan nama karyawan ke file hasil post test Excel berdasarkan NIP dari file master karyawan secara lokal di browser.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
